@@ -82,7 +82,7 @@ if __name__ == '__main__':
         0, 1, (1, 3, 256, 256))).float().to(device)
     _imgs = torch.cat((_img0, _img1), 1)
     model = Model(True, True, 3)
-    model.load_model(r"D:\60-fps-Project\Projects\RIFE GUI\train_log\official_v6", -1)
+    model.load_model(r"D:\60-fps-Project\Projects\RIFE GUI\train_log\official_3.x", -1)
     model.eval()
     _t = time.time()
     print(model.inference(_img0, _img1).shape)

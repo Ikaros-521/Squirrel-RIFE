@@ -7,10 +7,8 @@ import wmi
 from Crypto.Cipher import PKCS1_v1_5 as Cipher_pkcs1_v1_5, AES
 from Crypto.PublicKey import RSA
 
-import steamworks
 from Utils.StaticParameters import appDir
 from Utils.utils import ArgumentManager
-from steamworks import GenericSteamException
 
 
 class RSACipher(object):
@@ -204,74 +202,7 @@ class RetailValidation(ValidationBase):
         return False
 
 
-class SteamValidation(ValidationBase):
-    def __init__(self, logger):
-        """
-        Whether use steam for validation
-        """
-        super().__init__(logger)
-        original_cwd = os.getcwd()
-        self.steamworks = None
-        self.steamworks = steamworks.STEAMWORKS(ArgumentManager.app_id)
-        try:
-            self.steamworks.initialize()  # This method has to be called in order for the wrapper to become functional!
-        except:
-            self._is_validate_start = False
-            self._validate_error = GenericSteamException(
-                'Failed to Load Steam Status, Please Make Sure this game is purchased')
-            self.logger.error('Failed to initiate Steam API. Shutting down.')
-            return
-        self._is_validate_start = True
-        if self.steamworks.UserStats.RequestCurrentStats():
-            self.logger.info('Steam Stats successfully retrieved!')
-        else:
-            self._is_validate_start = False
-            self._validate_error = GenericSteamException('Failed to get Stats Error, Please Make Sure Steam is On')
-            self.logger.error('Failed to get Steam stats. Shutting down.')
-        os.chdir(original_cwd)
 
-    def _CheckPurchaseStatus(self):
-        steam_64id = self.steamworks.Users.GetSteamID()
-        valid_response = self.steamworks.Users.GetAuthSessionTicket()
-        self.logger.debug(f'Steam User Logged on as {steam_64id}, auth: {valid_response}')
-        if valid_response != 0:  # Abnormal Purchase
-            self._is_validate_start = False
-            self._validate_error = GenericSteamException("Abnormal Start, Please Check Software's Purchase Status, "
-                                                         f"Response: {valid_response}")
-
-    def CheckValidateStart(self):
-        return self._is_validate_start
-
-    def CheckProDLC(self, dlc_id: int) -> bool:
-        """
-
-        :param dlc_id: DLC for SVFI, start from 0
-        0: Pro
-        :return:
-        """
-        purchase_pro = self.steamworks.Apps.IsDLCInstalled(ArgumentManager.pro_dlc_id[dlc_id])
-        self.logger.info(f'Steam User Purchase Pro DLC Status: {purchase_pro}')
-        return purchase_pro
-
-    def GetStat(self, key: str, key_type: type):
-        if key_type is int:
-            return self.steamworks.UserStats.GetStatInt(key)
-        elif key_type is float:
-            return self.steamworks.UserStats.GetStatFloat(key)
-
-    def GetAchv(self, key: str):
-        return self.steamworks.UserStats.GetAchievement(key)
-
-    def SetStat(self, key: str, value):
-        return self.steamworks.UserStats.SetStat(key, value)
-
-    def SetAchv(self, key: str, clear=False):
-        if clear:
-            return self.steamworks.UserStats.ClearAchievement(key)
-        return self.steamworks.UserStats.SetAchievement(key)
-
-    def Store(self):
-        return self.steamworks.UserStats.StoreStats()
 
 
 class EULAWriter:

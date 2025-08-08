@@ -54,7 +54,7 @@ def create_default_config(output_dir):
         "use_rife_uhd": "false",
         "use_rife_interp": "false",
         "use_rife_sc_dropout": "false",
-        "use_rife_algo": "official_2.3",
+        "use_rife_algo": "official_3.x",
         "rife_scale": "0.5",
         "rife_device_id": "0",
         "target_fps": "60",

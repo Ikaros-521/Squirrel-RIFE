@@ -44,6 +44,9 @@ class RifeInterpolation(VideoFrameInterpolationBase):
 
         self.logger.info("Loading RIFE Model: https://github.com/hzwer/arXiv2020-RIFE")
         self.model_version = self.get_model_version(self.model_path)
+
+        self.logger.info(f"RIFE Model Version: {self.model_version}")
+        
         if self.model_version == RIFE_TYPE.RIFEv2:
             from RIFE.RIFE_HDv2 import Model
             model = Model(use_multi_cards=self.ARGS.use_rife_multi_cards,
@@ -78,8 +81,8 @@ class RifeInterpolation(VideoFrameInterpolationBase):
 
     def _check_model_path(self):
         if self.ARGS.rife_model == "" or not os.path.exists(self.ARGS.rife_model):
-            self.model_path = os.path.join(appDir, 'train_log', 'official_2.3')
-            self.logger.warning("Using Default RIFE Model official_2.3")
+            self.model_path = os.path.join(appDir, 'train_log', 'official_3.x')
+            self.logger.warning("Using Default RIFE Model official_3.x")
         else:
             self.model_path = self.ARGS.rife_model
 

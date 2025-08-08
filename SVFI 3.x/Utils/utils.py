@@ -68,20 +68,16 @@ class ArgumentManager:
     """
     For OLS's arguments input management
     """
-    app_id = 1692080
-    pro_dlc_id = [1718750]
-
     community_qq = 264023742
     professional_qq = 1054016374
 
     """Release Version Control"""
-    is_steam = True
     is_free = False
     is_release = False
     traceback_limit = 0 if is_release else None
     gui_version = "3.10.21"
     version_tag = f"{gui_version}-alpha " \
-                  f"{'Professional' if not is_free else 'Community'} - {'Steam' if is_steam else 'Retail'}"
+                  f"{'Professional' if not is_free else 'Community'} - Retail"
     ols_version = "7.4.24"
     """ 发布前改动以上参数即可 """
 
@@ -910,7 +906,7 @@ class VideoFrameInterpolationBase:
         elif 'xvfi' in model_path:
             current_model_index = RIFE_TYPE.XVFI
         else:
-            current_model_index = RIFE_TYPE.RIFEv2  # default RIFEv2
+            current_model_index = RIFE_TYPE.RIFEv6  # default RIFEv6
         return current_model_index
 
     def run(self):

@@ -15,28 +15,50 @@ import numpy as np
 import psutil
 import tqdm
 
-from Utils.LicenseModule import EULAWriter
+
 from Utils.StaticParameters import appDir, SupportFormat, HDR_STATE, RGB_TYPE, RT_RATIO, LUTS_TYPE, RIFE_TYPE
 from Utils.utils import ArgumentManager, DefaultConfigParser, Tools, VideoInfoProcessor, \
     ImageRead, ImageWrite, TransitionDetection_ST, \
     VideoFrameInterpolationBase, Hdr10PlusProcessor, DoviProcessor, \
     SuperResolutionBase, overtime_reminder_deco, OverTimeReminderTask
 from skvideo.io import FFmpegWriter, FFmpegReader, EnccWriter, SVTWriter
-from steamworks import STEAMWORKS
-from steamworks.exceptions import GenericSteamException
 
 print(f"INFO - ONE LINE SHOT ARGS {ArgumentManager.ols_version} {datetime.date.today()}")
 
 """Validation Module Initiation"""
-if ArgumentManager.is_steam:
-    from Utils.LicenseModule import SteamValidation as ValidationModule
+# 创建一个简化的验证类，直接跳过license验证
+class SimpleValidation:
+    def __init__(self, logger):
+        self.logger = logger
+        self._is_validate_start = True
+        self._validate_error = None
+        self.logger.info('License validation bypassed (simple mode)')
 
-    try:
-        _steamworks = STEAMWORKS(ArgumentManager.app_id)
-    except:
-        pass
-else:
-    from Utils.LicenseModule import RetailValidation as ValidationModule
+    def CheckValidateStart(self):
+        return self._is_validate_start
+
+    def CheckProDLC(self, pro_dlc_id: int):
+        return True
+
+    def GetStat(self, key: str, key_type: type):
+        return False
+
+    def GetAchv(self, key: str):
+        return False
+
+    def SetStat(self, key: str, value):
+        return
+
+    def SetAchv(self, key: str, clear=False):
+        return
+
+    def Store(self):
+        return False
+
+    def GetValidateError(self):
+        return self._validate_error
+
+ValidationModule = SimpleValidation
 
 """设置环境路径"""
 os.chdir(appDir)
@@ -268,49 +290,11 @@ class ValidationFlow(ValidationModule):
 
     def steam_update_achv(self, output_path):
         """
-        Update Steam Achievement
+        Update Steam Achievement (Disabled for Retail version)
         :return:
         """
-        if not self.ARGS.is_steam or self.kill:
-            """If encountered serious error in the process, end steam update"""
-            return
-        if self.ARGS.concat_only or self.ARGS.render_only or self.ARGS.extract_only:
-            return
-        """Get Stat"""
-        STAT_INT_FINISHED_CNT = self.GetStat("STAT_INT_FINISHED_CNT", int)
-        STAT_FLOAT_FINISHED_MINUTE = self.GetStat("STAT_FLOAT_FINISHED_MIN", float)
-
-        """Update Stat"""
-        STAT_INT_FINISHED_CNT += 1
-        self.SetStat("STAT_INT_FINISHED_CNT", STAT_INT_FINISHED_CNT)
-        if self.ARGS.all_frames_cnt >= 0:
-            """Update Mission Process Time only in interpolation"""
-            STAT_FLOAT_FINISHED_MINUTE += self.ARGS.all_frames_cnt / self.ARGS.target_fps / 60
-            self.SetStat("STAT_FLOAT_FINISHED_MIN", round(STAT_FLOAT_FINISHED_MINUTE, 2))
-
-        """Get ACHV"""
-        ACHV_Task_Frozen = self.GetAchv("ACHV_Task_Frozen")
-        ACHV_Task_Cruella = self.GetAchv("ACHV_Task_Cruella")
-        ACHV_Task_Suzumiya = self.GetAchv("ACHV_Task_Suzumiya")
-        ACHV_Task_1000M = self.GetAchv("ACHV_Task_1000M")
-        ACHV_Task_10 = self.GetAchv("ACHV_Task_10")
-        ACHV_Task_50 = self.GetAchv("ACHV_Task_50")
-
-        """Update ACHV"""
-        if 'Frozen' in output_path and not ACHV_Task_Frozen:
-            self.SetAchv("ACHV_Task_Frozen")
-        if 'Cruella' in output_path and not ACHV_Task_Cruella:
-            self.SetAchv("ACHV_Task_Cruella")
-        if any([i in output_path for i in ['Suzumiya', 'Haruhi', '涼宮', '涼宮ハルヒの憂鬱', '涼宮ハルヒの消失', '凉宫春日']]) \
-                and not ACHV_Task_Suzumiya:
-            self.SetAchv("ACHV_Task_Suzumiya")
-        if STAT_INT_FINISHED_CNT > 10 and not ACHV_Task_10:
-            self.SetAchv("ACHV_Task_10")
-        if STAT_INT_FINISHED_CNT > 50 and not ACHV_Task_50:
-            self.SetAchv("ACHV_Task_50")
-        if STAT_FLOAT_FINISHED_MINUTE > 1000 and not ACHV_Task_1000M:
-            self.SetAchv("ACHV_Task_1000M")
-        self.Store()
+        # Steam achievements are disabled in retail version
+        pass
 
 
 class IOFlow(threading.Thread):
@@ -2223,9 +2207,8 @@ class InterpWorkFlow:
         self.ARGS = __args
         self.run_all_time = datetime.datetime.now()
 
-        """EULA"""
-        self.eula = EULAWriter()
-        self.eula.boom()
+        """EULA - Skipped"""
+        # EULA validation skipped
 
         """Set Queues"""
         queue_len = self.ARGS.frames_queue_len
@@ -2427,7 +2410,7 @@ class InterpWorkFlow:
         """
 
         """Check Steam Validation"""
-        self.__check_validation()
+        # self.__check_validation()
 
         """Go through the process"""
         if self.ARGS.concat_only:
