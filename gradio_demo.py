@@ -183,7 +183,7 @@ def create_interface():
         # 添加示例
         gr.Examples(
             examples=[
-                ["example.mp4", 60, True, 0.5, 12, 16],
+                ["test-15fps.mp4", 60, True, 0.5, 12, 16],
             ],
             inputs=[input_video, target_fps, use_fp16, rife_scale, scdet_threshold, crf_value],
         )
