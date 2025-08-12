@@ -116,6 +116,16 @@ def process_video(input_path, target_fps, use_fp16, rife_scale, scdet_threshold,
     timestamp = int(time.time() * 1000)  # 毫秒级时间戳
     task_id = f"gradio_task_{os.path.basename(input_path)}_{timestamp}"
     
+    # 清理旧的项目目录，避免混淆
+    old_project_dirs = [d for d in Path(output_dir).iterdir() if d.is_dir() and d.name.startswith("input_")]
+    for old_dir in old_project_dirs:
+        try:
+            import shutil
+            shutil.rmtree(old_dir)
+            print(f"已删除旧项目目录: {old_dir}")
+        except Exception as e:
+            print(f"删除旧项目目录时出错: {e}")
+    
     # 构建SVFI命令
     cmd = f"python \"{os.path.join(svfi_path, 'one_line_shot_args.py')}\" -i \"{input_path}\" -c \"{config_path}\" -t \"{task_id}\""
     
@@ -126,12 +136,33 @@ def process_video(input_path, target_fps, use_fp16, rife_scale, scdet_threshold,
     if result != 0:
         return None, f"处理失败，错误代码: {result}"
     
-    # 查找输出文件
+    # 查找输出文件 - 使用任务ID时间戳的后6位匹配文件名
     output_files = list(Path(output_dir).glob("*.mp4"))
     if not output_files:
         return None, "处理完成，但未找到输出文件"
     
-    output_file = str(output_files[0])
+    # 获取任务ID时间戳的后6位
+    task_id_suffix = task_id[-6:]  # 获取任务ID的最后6位，与SVFI的输出文件命名规则一致
+    print(f"查找包含任务ID后缀 {task_id_suffix} 的输出文件")
+    
+    # 查找包含任务ID后缀的文件
+    matching_file = None
+    for file_path in output_files:
+        if task_id_suffix in str(file_path):
+            matching_file = str(file_path)
+            print(f"找到匹配的输出文件: {matching_file}")
+            break
+    
+    if matching_file:
+        output_file = matching_file
+    else:
+        print(f"警告: 未找到包含任务ID后缀 {task_id_suffix} 的文件")
+        print(f"所有输出文件: {[str(f) for f in output_files]}")
+        # 如果没找到匹配的文件，使用最新的文件
+        output_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        output_file = str(output_files[0])
+        print(f"使用最新的输出文件: {output_file}")
+    
     return output_file, f"处理成功: {output_file}"
 
 # 创建Gradio界面
@@ -163,6 +194,8 @@ def create_interface():
             if video is None:
                 return None, "请先上传视频"
             
+            print(f"开始处理新视频，输入文件: {video}")
+            
             # 保存上传的视频到临时文件
             input_path = os.path.join(temp_dir, "input.mp4")
             shutil.copy(video, input_path)
@@ -171,7 +204,12 @@ def create_interface():
             output_path, message = process_video(input_path, fps, fp16, scale, threshold, crf)
             
             if output_path:
-                return output_path, message
+                print(f"处理完成，输出文件: {output_path}")
+                # 验证输出文件确实存在且不为空
+                if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                    return output_path, message
+                else:
+                    return None, f"输出文件无效: {output_path}"
             else:
                 return None, message
         
