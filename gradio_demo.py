@@ -111,8 +111,10 @@ def process_video(input_path, target_fps, use_fp16, rife_scale, scdet_threshold,
     with open(config_path, "w", encoding="utf-8") as f:
         config.write(f)
     
-    # 生成任务ID
-    task_id = f"gradio_task_{os.path.basename(input_path)}"
+    # 生成任务ID，添加时间戳确保唯一性
+    import time
+    timestamp = int(time.time() * 1000)  # 毫秒级时间戳
+    task_id = f"gradio_task_{os.path.basename(input_path)}_{timestamp}"
     
     # 构建SVFI命令
     cmd = f"python \"{os.path.join(svfi_path, 'one_line_shot_args.py')}\" -i \"{input_path}\" -c \"{config_path}\" -t \"{task_id}\""
